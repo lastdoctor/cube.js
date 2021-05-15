@@ -19,7 +19,7 @@ import { layout } from '../../theme';
 const menuOrderCloud = [
   'Cube Cloud Getting Started',
   'Configuring Cube Cloud',
-  'Cube IDE',
+  'Developer Tools',
   'Deploys',
   'Inspecting Queries'
 ];
