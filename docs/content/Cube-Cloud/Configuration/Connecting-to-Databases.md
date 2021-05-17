@@ -21,9 +21,112 @@ You can connect all Cube.js supported databases to your Cube Cloud deployment.
 Below you can find guides on how to use Cube Cloud with specific database
 vendors.
 
-- Snowflake
-- BigQuery
-- AWS Athena
+- [AWS Athena](#guides-aws-athena)
+- [BigQuery](#guides-big-query)
+- [Snowflake](#guides-snowflake)
+
+## Guides
+
+[comment]: <>
+(https://raw.githubusercontent.com/cube-js/cube.js/master/docs/content/Cube-Cloud/Configuration/)
+
+### AWS Athena
+
+The following fields are required when creating an AWS Athena connection:
+
+| Field                     | Description                                                       | Examples                               |
+| ------------------------- | ----------------------------------------------------------------- | -------------------------------------- |
+| **AWS Access Key ID**     | The AWS Access Key ID to use for database connections             | A valid AWS Access Key ID              |
+| **AWS Secret Access Key** | The AWS Secret Access Key to use for database connections         | A valid AWS Secret Access Key          |
+| **AWS Region**            | The AWS region of the Cube.js deployment                          | [A valid AWS region][link-aws-regions] |
+| **S3 Output Location**    | The S3 path to store query results made by the Cube.js deployment | A valid S3 path                        |
+
+<div
+  style="text-align: center"
+>
+  <img
+  alt="Cube Cloud AWS Athena Configuration Screen"
+  src="connect-db-athena.png"
+  style="border: none"
+  width="100%"
+  />
+</div>
+
+### AWS Redshift
+
+<!-- prettier-ignore-start -->
+[[warning |]]
+| Ensure that the database can be accessed over the public Internet. If you'd
+| prefer to keep the database on a private network, [contact us for VPC peering
+| solutions](#connecting-to-a-database-not-exposed-over-the-internet).
+<!-- prettier-ignore-end -->
+
+The following fields are required when creating an AWS Redshift connection:
+
+| Field        | Description                                  | Examples                                                       |
+| ------------ | -------------------------------------------- | -------------------------------------------------------------- |
+| **Hostname** | The host URL for the AWS Redshift cluster    | `examplecluster.abc123xyz789.us-west-2.redshift.amazonaws.com` |
+| **Port**     | The port for the AWS Redshift cluster        | `5439`                                                         |
+| **Database** | The name of the database to connect to       | A valid database in the Redshift cluster                       |
+| **Username** | The username used to connect to the database | Your Redshift username                                         |
+| **Password** | The password used to connect to the database | Your Redshift password                                         |
+
+<div
+  style="text-align: center"
+>
+  <img
+  alt="Cube Cloud AWS Redshift Configuration Screen"
+  src="connect-db-redshift.png"
+  style="border: none"
+  width="100%"
+  />
+</div>
+
+### BigQuery
+
+The following fields are required when creating a BigQuery connection:
+
+| Field                         | Description                                                                                                             | Examples                                                         |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| **Service Account JSON file** | A JSON key file for connecting to Google BigQuery                                                                       | A valid Google BigQuery JSON key file                            |
+| **Project ID**                | The Google BigQuery project ID to connect to                                                                            | A valid Google BigQuery Project ID                               |
+| **Encoded Key File**          | A Base64 encoded JSON key file for connecting to Google BigQuery. Required if Service Account JSON file is not provided | A valid Google BigQuery JSON key file encoded as a Base64 string |
+
+<div
+  style="text-align: center"
+>
+  <img
+  alt="Cube Cloud BigQuery Configuration Screen"
+  src="connect-db-bigquery.png"
+  style="border: none"
+  width="100%"
+  />
+</div>
+
+### Snowflake
+
+The following fields are required when creating a Snowflake connection:
+
+| Field         | Description                                                     | Examples                                           |
+| ------------- | --------------------------------------------------------------- | -------------------------------------------------- |
+| **Username**  | The username used to connect to the database                    | Your Snowflake username                            |
+| **Password**  | The password used to connect to the database                    | Your Snowflake password                            |
+| **Database**  | The name of the database to connect to                          | A valid database in the Snowflake account          |
+| **Account**   | The Snowflake account ID to use when connecting to the database | A valid Snowflake account ID                       |
+| **Region**    | The Snowflake region to use when connecting to the database     | [A valid Snowflake region][link-snowflake-regions] |
+| **Warehouse** | The Snowflake warehouse to use when connecting to the database  | A valid Snowflake warehouse for the account        |
+| **Role**      | The Snowflake role to use when connecting to the database       | A valid Snowflake role for the account             |
+
+<div
+  style="text-align: center"
+>
+  <img
+  alt="Cube Cloud Snowflake Configuration Screen"
+  src="connect-db-snowflake.png"
+  style="border: none"
+  width="100%"
+  />
+</div>
 
 ## Connecting to multiple databases
 
@@ -51,8 +154,8 @@ database credentials:
 
 ### Custom SSL certificates
 
-To use custom SSL certificates between Cube Cloud and your database server, go to
-the **Env vars** tab in **Settings**:
+To use custom SSL certificates between Cube Cloud and your database server, go
+to the **Env vars** tab in **Settings**:
 
 <!-- prettier-ignore-start -->
 [[warning]]
@@ -74,14 +177,12 @@ the **Env vars** tab in **Settings**:
 
 Add the following environment variables:
 
-| Environment Variable | Description | Example |
-|----------------------|-------------|---------|
-| `CUBEJS_DB_SSL`                                 | If `true`, enables SSL encryption for database connections from Cube.js                                                                                                                                     | `true`, `false`                                                  |
-| `CUBEJS_DB_SSL_CA`                              | The contents of a CA bundle in PEM format, or a path to one. For more information, check the `options.ca` property for TLS Secure Contexts [in the Node.js documentation][link-nodejs-tls-options]          | A valid CA bundle or a path to one                               |
-| `CUBEJS_DB_SSL_CERT`                            | The contents of an SSL certificate in PEM format, or a path to one. For more information, check the `options.cert` property for TLS Secure Contexts [in the Node.js documentation][link-nodejs-tls-options] | A valid SSL certificate or a path to one                         |
-| `CUBEJS_DB_SSL_KEY`                             | The contents of a private key in PEM format, or a path to one. For more information, check the `options.key` property for TLS Secure Contexts [in the Node.js documentation][link-nodejs-tls-options]       | A valid SSL private key or a path to one                         |
-
-[ref-config-env-vars]: /reference/environment-variables#database-connection
+| Environment Variable | Description                                                                                                                                                                                                 | Example                                  |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| `CUBEJS_DB_SSL`      | If `true`, enables SSL encryption for database connections from Cube.js                                                                                                                                     | `true`, `false`                          |
+| `CUBEJS_DB_SSL_CA`   | The contents of a CA bundle in PEM format, or a path to one. For more information, check the `options.ca` property for TLS Secure Contexts [in the Node.js documentation][link-nodejs-tls-options]          | A valid CA bundle or a path to one       |
+| `CUBEJS_DB_SSL_CERT` | The contents of an SSL certificate in PEM format, or a path to one. For more information, check the `options.cert` property for TLS Secure Contexts [in the Node.js documentation][link-nodejs-tls-options] | A valid SSL certificate or a path to one |
+| `CUBEJS_DB_SSL_KEY`  | The contents of a private key in PEM format, or a path to one. For more information, check the `options.key` property for TLS Secure Contexts [in the Node.js documentation][link-nodejs-tls-options]       | A valid SSL private key or a path to one |
 
 ## Allowing connections from Cube Cloud IP
 
@@ -93,3 +194,11 @@ Settings page.
 ## Connecting to a database not exposed over the internet
 
 [Contact us](mailto:support@cube.dev) for VPC peering and on-premise solutions.
+
+[link-aws-regions]:
+  https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions
+[link-nodejs-tls-options]:
+  https://nodejs.org/docs/latest/api/tls.html#tls_tls_createsecurecontext_options
+[link-snowflake-regions]:
+  https://docs.snowflake.com/en/user-guide/intro-regions.html
+[ref-config-env-vars]: /reference/environment-variables#database-connection
