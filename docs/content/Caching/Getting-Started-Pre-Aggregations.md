@@ -159,7 +159,175 @@ the pre-aggregations are rebuilt.
 These refreshes can be done on-demand, or [in the background as a scheduled
 process][ref-caching-preaggs-bk-refresh].
 
+## Ensuring pre-aggregations are targeted by queries
+
+### Additivity
+
+So far, we've described pre-aggregations as aggregated versions of your existing
+data.
+
+However, there are some rules that apply to when Cube.js uses the
+pre-aggregation. The "additivity" of fields specified in both the query and in
+the pre-aggregation determine this.
+
+So what is additivity? Let's add another cube called `LineItems` to the previous
+example to demonstrate. The `LineItems` "belong to" the `Orders` cube, and are
+[joined][ref-schema-joins] as such:
+
+```javascript
+cube(`LineItems`, {
+  sql: `SELECT * FROM public.line_items`,
+
+  joins: {
+    Orders: {
+      sql: `${CUBE}.order_id = ${Orders}.id`,
+      relationship: `belongsTo`,
+    },
+  },
+
+  measures: {
+    count: {
+      type: `count`,
+      drillMembers: [id, createdAt],
+    },
+  },
+
+  dimensions: {
+    id: {
+      sql: `id`,
+      type: `number`,
+      primaryKey: true,
+    },
+
+    createdAt: {
+      sql: `created_at`,
+      type: `time`,
+    },
+  },
+});
+```
+
+Some sample data from the `line_items` table might look like:
+
+| **id** | **product_id** | **order_id** | **quantity** | **price** | **profit_margin** | **created_at**             |
+| ------ | -------------- | ------------ | ------------ | --------- | ----------------- | -------------------------- |
+| 1      | 31             | 1            | 1            | 275       | 1                 | 2019-01-31 00:00:00.000000 |
+| 2      | 49             | 2            | 6            | 248       | 0.1               | 2021-01-20 00:00:00.000000 |
+| 3      | 89             | 3            | 6            | 197       | 0.2               | 2021-11-25 00:00:00.000000 |
+| 4      | 71             | 4            | 8            | 223       | 0.15              | 2019-12-23 00:00:00.000000 |
+| 5      | 64             | 5            | 5            | 75        | 0.7               | 2019-04-20 00:00:00.000000 |
+
+Looking at the raw data, we can see that if the data were to be aggregated by
+day (for example), then we could simply add together the `quantity` and `price`
+fields. This means that `quantity` and `price` are both "additive measures", and
+we can represent them in the `LineItems` schema as follows:
+
+```javascript
+cube(`LineItems`, {
+  ...,
+  measures: {
+    ...,
+    quantity: {
+      sql: `quantity`,
+      type: `sum`,
+    },
+    price: {
+      type: `sum`,
+      sql: `price`,
+      format: `currency`,
+    },
+  },
+  ...,
+});
+```
+
+Because neither `quantity` and `price` reference any other measures in our
+`LineItems` cube, we can also say that they are "additive leaf measures". Any
+query requesting only these two measures can be called a "leaf measure additive"
+query.
+
+### Non-Additivity
+
+Using the same sample data for `line_items`, there's a `profit_margin_pct` field
+which is different for each row. However, despite the value being numerical, it
+doesn't actually make sense to add up this value - doing so with the sample data
+would result in a 215% profit margin which (unfortunately) is not correct. We
+can add the `profit_margin_pct` field to our schema like this:
+
+```javascript
+cube(`LineItems`, {
+  ...,
+  measures: {
+    ...,
+    profitMargin: {
+      sql: `profit_margin`,
+      type: `number`,
+      format: 'percentage',
+    },
+  },
+  ...,
+});
+```
+
+Another example of a non-additive measure would be a distinct count of
+`product_id`. If we took the distinct count of products sold over a month, and
+then tried to sum the distinct count of products for each individual day and
+compared them, we would not get the same results. We can add the measure like
+this:
+
+```javascript
+cube(`LineItems`, {
+  ...,
+  measures: {
+    ...,
+    countDistinctProducts: {
+      sql: `product_id`,
+      type: `countDistinct`,
+    },
+  },
+  ...,
+});
+```
+
+### How additivity plays a role in pre-aggregation selection
+
+To recap what we've learnt so far:
+
+- "Additive measures" are measures whose values can be added together.
+- "Multiplied" measures are measures that define `hasMany` relations.
+- "Leaf measures" are measures that do not reference any other measures in their
+  definition.
+- A query is "leaf measure additive" if all of its leaf measures are one of:
+  `count`, `sum`, `min`, `max` or `countDistinctApprox`.
+
+Cube.js selects the best available pre-aggregation based on the incoming queries
+it receives via the API.
+
+Some considerations:
+
+- The query's time dimension and granularity together act as a dimension. If the
+  date range isn't aligned with granularity, a common granularity is used. To
+  match granularity date range, its start date and end date should match. For
+  example, for month it's ['2020-01-01T00:00:00.000', '2020-01-31T23:59:59.999']
+  and for day it's ['2020-01-01T00:00:00.000', '2020-01-01T23:59:59.999']. Date
+  ranges are inclusive. The minimum granularity is `second`.
+- The order in which pre-aggregations are defined in schemas matter; the first
+  matching pre-aggregation for a query is the one that is used. Cubes of a
+  measures and then cubes of dimensions are checked to find a matching `rollup`.
+  However `rollup` pre-aggregations always have priority over `originalSql`.
+  Thus, if you have both `originalSql` and `rollup` defined, Cube.js will try to
+  find matching `rollup` before trying to find matching `originalSql`.
+  Furthermore, you can instruct Cube.js to use original sql pre-aggregations
+  using [`useOriginalSqlPreAggregations`][ref-orig-sql].
+
+Cube.js selects the best available pre-aggregation based on the incoming queries
+it receives via the API. The process for selection is outlined in the diagram
+below:
+
+![](pre-agg-selection-flow.png)
+
 [ref-schema-preaggs-examples]: /pre-aggregations#rollup-rollup-examples
+[ref-schema-joins]: /joins
 [ref-caching-preaggs-cubestore]:
   /caching/using-pre-aggregations#pre-aggregations-storage
 [ref-caching-preaggs-bk-refresh]:
